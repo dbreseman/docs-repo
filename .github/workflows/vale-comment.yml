@@ -56,6 +56,7 @@ jobs:
       - name: Post review comments
         if: steps.pr.outputs.has_results == 'true'
         run: |
+          # reviewdog needs a git repo; filter-mode=added comments only on lines the PR changed
           git init -q
           env -u GITHUB_ACTIONS reviewdog -f=rdjsonl -name=vale -reporter=github-pr-review -filter-mode=added -fail-on-error=false -level=info < vale-results/results.rdjsonl
         env:
