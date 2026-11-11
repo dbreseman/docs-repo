@@ -74,3 +74,10 @@ If you use GitHub Copilot, the repository provides the following:
 
 * [Contributing to Mendix Docs](/community-tools/contribute-to-mendix-docs/)
 * [Documentation Writing Guidelines](/community-tools/documentation-guidelines/)
+
+## this heading is not in title case
+
+This paragraph was added to test the Vale workflow. You can click on the colour picker to see the behaviour of the tool, e.g. when you whitelist a colour. Click here to learn more — it is quick.
+
+* Approved - The request is accepted.
+* Denied - The request is rejected. 
