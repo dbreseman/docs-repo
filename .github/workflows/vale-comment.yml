@@ -64,6 +64,9 @@ jobs:
       - name: Post review comments
         if: steps.pr.outputs.has_results == 'true'
         run: |
+          # Outside its GitHub Actions mode, reviewdog needs a .git directory to find the repository root.
+          # An empty repository is enough; no PR code is fetched.
+          git init -q
           env -u GITHUB_ACTIONS reviewdog -f=rdjsonl -name=vale -reporter=github-pr-review -filter-mode=added -fail-on-error=false -level=info < vale-results/results.rdjsonl
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ github.token }}
