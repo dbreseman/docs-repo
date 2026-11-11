@@ -1,10 +1,6 @@
 name: Vale Comments
 
-# Posts Vale results from vale.yml as PR review comments.
-#
-# Runs on workflow_run, so it has a write token even for fork PRs.
-# SECURITY: This workflow must never check out or run code from the PR.
-# It only reads the artifact as data and validates it before use.
+# Posts Vale results from vale.yml as PR review comments, including for fork PRs.
 
 on:
   workflow_run:
@@ -18,16 +14,12 @@ permissions:
 
 jobs:
   comment:
-    if: >
-      (github.repository_owner == 'mendix' || github.repository_owner == 'dbreseman') &&
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
+      # SECURITY: This workflow has write permissions, so never add a step that checks out or runs code from the PR.
+
       - name: Download results
-        id: download
-        # Vale Linting is skipped on draft PRs and uploads no artifact, so don't fail when it's missing
-        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: vale-results
@@ -37,12 +29,12 @@ jobs:
 
       - name: Validate PR number
         id: pr
-        if: steps.download.outcome == 'success'
         run: |
           PR_NUMBER=$(head -n 1 vale-results/pr-number)
           # The artifact is untrusted: accept only a plain integer
           if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
-            echo "Invalid PR number in artifact"; exit 1
+            echo "Invalid PR number"
+            exit 1
           fi
           # Confirm the PR's head commit is the commit that was linted
           PR_SHA=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq '.head.sha')
@@ -58,14 +50,12 @@ jobs:
 
       - name: Set up reviewdog
         if: steps.pr.outputs.has_results == 'true'
-        # Pinned to a commit because this job has a write token (v1.5.0)
+        # Pin to a commit (v1.5.0) because this job has write permissions
         uses: reviewdog/action-setup@d8a7baabd7f3e8544ee4dbde3ee41d0011c3a93f
 
       - name: Post review comments
         if: steps.pr.outputs.has_results == 'true'
         run: |
-          # Outside its GitHub Actions mode, reviewdog needs a .git directory to find the repository root.
-          # An empty repository is enough; no PR code is fetched.
           git init -q
           env -u GITHUB_ACTIONS reviewdog -f=rdjsonl -name=vale -reporter=github-pr-review -filter-mode=added -fail-on-error=false -level=info < vale-results/results.rdjsonl
         env:
