@@ -65,6 +65,21 @@ jobs:
             # Convert Vale JSON to reviewdog's rdjsonl format
             jq -c 'to_entries[] | .key as $f | .value[] | {message: ("[" + .Check + "] " + .Message), location: {path: $f, range: {start: {line: .Line, column: .Span[0]}}}, severity: (.Severity | ascii_upcase)}' vale.json > vale-results/results.rdjsonl
           fi
+      - name: Summarize findings
+        run: |
+          # Lists every error Vale found in the changed files, including lines the PR didn't change
+          if [ -s vale-results/results.rdjsonl ]; then
+            {
+              echo "## Vale errors in changed files"
+              echo
+              echo "Review comments appear only for lines this PR changed. This list includes all errors in the changed files."
+              echo
+              echo "| File | Line | Check | Message |"
+              echo "| --- | --- | --- | --- |"
+              jq -r 'to_entries[] | .key as $f | .value[] | "| \($f) | \(.Line) | \(.Check) | \(.Message | gsub("[|<>]"; " ")) |"' vale.json
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
 
       - name: Upload results
         uses: actions/upload-artifact@v7
